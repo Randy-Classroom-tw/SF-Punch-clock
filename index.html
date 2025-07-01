@@ -1429,7 +1429,7 @@
   /**
    * @fileoverview SF辦公室出勤系統前端腳本 (完整版本)
    * @version 1.0.14
-   * @author AB系統團隊
+   * @author SF系統團隊
    */
 
   /* ====================================
@@ -5351,59 +5351,60 @@
       openNotice(elements.allButtons.btnNotice);
     });
 
-    // 表單按鈕點擊事件，加入驗證機制
+    // 表單按鈕點擊事件 - 維修中版本
     elements.allButtons.btnForm.addEventListener("click", async () => {
       // 設置操作狀態為進行中
       ButtonStateManager.setOperationStatus(true);
       UIUtils.disableAllButtons();
       
       const idCode = elements.idInput.value;
-      
+      const button = elements.allButtons.btnForm;
+
       if (!validateIdCode(idCode)) {
         UIUtils.displayError("請鍵入完整的身分證後四碼");
-        UIUtils.startIndividualCooldown(elements.allButtons.btnForm, CONFIG.COOLDOWN_MS, elements.allButtons.btnForm.dataset.originalText);
-        UIUtils.enableAllButtonsExcept(elements.allButtons.btnForm);
+        UIUtils.startIndividualCooldown(button, CONFIG.COOLDOWN_MS, button.dataset.originalText);
+        UIUtils.enableAllButtonsExcept(button);
         ButtonStateManager.setOperationStatus(false);
         return;
       }
-      
+
       if (!navigator.onLine) {
-        UIUtils.displayError("請確認網路連線");
-        UIUtils.startIndividualCooldown(elements.allButtons.btnForm, CONFIG.COOLDOWN_MS, elements.allButtons.btnForm.dataset.originalText);
-        UIUtils.enableAllButtonsExcept(elements.allButtons.btnForm);
+        UIUtils.displayError("離線無法開啟表單");
+        UIUtils.startIndividualCooldown(button, CONFIG.COOLDOWN_MS, button.dataset.originalText);
+        UIUtils.enableAllButtonsExcept(button);
         ButtonStateManager.setOperationStatus(false);
         return;
       }
       
-      UIUtils.displayLoading("查詢中｜請稍候...");
-      
+      UIUtils.displayLoading("驗證權限中...");
+
       try {
-        // 呼叫API驗證後四碼是否在授權名單內
-        const result = await NetworkUtils.callGASWithRetry("checkDeviceBinding", [idCode]);
-        
-        if (result.status === "success") {
-          // 驗證成功，顯示表單選擇模態框
-          UIUtils.clearResponse();
-          showFormApplicationModal();
-          UIUtils.startIndividualCooldown(elements.allButtons.btnForm, CONFIG.COOLDOWN_MS, elements.allButtons.btnForm.dataset.originalText);
-        } else {
-          // ★ 新增 "AUTH.NOT_IN_AUTHLIST" 判斷
-          if (result.error === "AUTH.NOT_IN_AUTHLIST" || 
-              result.error === "AUTH.NOT_BOUND" || 
-              result.error === "AUTH.DEVICE_MISMATCH" || 
-              result.error === "AUTH.INVALID_USER") {
-            UIUtils.displayError("不在授權名單中: 申請失敗");
-          } else {
-            UIUtils.displayError(result.message || "驗證授權失敗");
-          }
-          UIUtils.startIndividualCooldown(elements.allButtons.btnForm, CONFIG.COOLDOWN_MS, elements.allButtons.btnForm.dataset.originalText);
+        const authCheck = await NetworkUtils.callGASWithRetry("checkDeviceBinding", [idCode]);
+        if (authCheck.status !== "success") {
+          UIUtils.displayError(authCheck.message || "不在授權名單中: 開啟失敗");
+          UIUtils.startIndividualCooldown(button, CONFIG.COOLDOWN_MS, button.dataset.originalText);
+          UIUtils.enableAllButtonsExcept(button);
+          ButtonStateManager.setOperationStatus(false);
+          return;
         }
-      } catch(err) {
-        UIUtils.displayError(`驗證授權失敗: ${err.message}`);
-        UIUtils.startIndividualCooldown(elements.allButtons.btnForm, CONFIG.COOLDOWN_MS, elements.allButtons.btnForm.dataset.originalText);
+        
+        // 驗證通過，顯示表單
+        UIUtils.clearResponse();
+        showFormApplicationModal();
+
+      } catch (err) {
+        UIUtils.displayError(`驗證失敗: ${err.message}`);
+        UIUtils.startIndividualCooldown(button, CONFIG.COOLDOWN_MS, button.dataset.originalText);
+        UIUtils.enableAllButtonsExcept(button);
       } finally {
-        UIUtils.enableAllButtonsExcept(elements.allButtons.btnForm);
+        // 無論成功或失敗，最後都應重置狀態
         ButtonStateManager.setOperationStatus(false);
+        // 只有不在冷卻中的按鈕才重新啟用
+        if (!ButtonStateManager.isButtonCooling(button.id)) {
+            UIUtils.enableAllButtons();
+        } else {
+            UIUtils.enableAllButtonsExcept(button);
+        }
       }
     });
 
