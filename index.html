@@ -4561,144 +4561,100 @@
   function createShiftChangeFormContent() {
     const content = document.createElement("div");
     content.className = "form-content";
-    
-    // 異動日期選擇
+
+    // 輔助函式：創建包含新選項的下拉選單
+    const createNewShiftSelect = (name, label) => {
+      const group = createSelectInputGroup(name, label, []);
+      const select = group.querySelector('select');
+      
+      // 清空預設選項
+      select.innerHTML = '';
+
+      // 添加預設提示選項
+      const defaultOption = document.createElement('option');
+      defaultOption.value = "";
+      defaultOption.textContent = "請選擇...";
+      defaultOption.disabled = true;
+      defaultOption.selected = true;
+      select.appendChild(defaultOption);
+
+      // 定義選項結構
+      const optionGroups = {
+        ":假別:": [
+          { value: "例假", label: "例假" },
+          { value: "休息", label: "休息" },
+          { value: "特休", label: "特休" },
+          { value: "國假", label: "國假" },
+          { value: "其他", label: "其他" }
+        ],
+        ":早班:": [
+          { value: "A1", label: "A1 11:30~20:30" }
+        ],
+        ":中班:": [
+          { value: "B1", label: "B1 14:00~23:00" }
+        ],
+        ":晚班:": [
+          { value: "C1", label: "C1 18:15~03:15" },
+          { value: "C2", label: "C2 18:30~03:30" },
+          { value: "C3", label: "C3 19:15~04:15" }
+        ],
+        ":兼職-晚班:": [
+          { value: "C5", label: "C5 20:00~03:00" },
+          { value: "C6", label: "C6 20:15~04:15" }
+        ],
+        ":特殊:": [
+          { value: "X1", label: "X1 19:30~03:30" },
+          { value: "X2", label: "X2 20:15~04:15" }
+        ]
+      };
+
+      // 遍歷結構並創建 optgroup 和 option
+      for (const groupLabel in optionGroups) {
+        const optgroup = document.createElement('optgroup');
+        optgroup.label = groupLabel;
+        optionGroups[groupLabel].forEach(opt => {
+          const option = document.createElement('option');
+          option.value = opt.value;
+          option.textContent = opt.label;
+          optgroup.appendChild(option);
+        });
+        select.appendChild(optgroup);
+      }
+      
+      return group;
+    };
+
+    // 1. 異動日期選擇
     const dateGroup = createDateInputGroup("shiftDate", "日期");
     content.appendChild(dateGroup);
-    
-    // 團隊選擇 (新增)
-    const teamGroup = createSelectInputGroup("teamType", "團隊", [
-      { value: "", label: "請選擇團隊" },
-      { value: "SV", label: "SV-外場" },
-      { value: "KT", label: "KT-內廚" }
-    ]);
+
+    // 2. 團隊欄位 (唯讀)
+    const teamGroup = createTextInputGroup("teamType", "團隊");
+    const teamInput = teamGroup.querySelector('input');
+    teamInput.value = "BA-吧檯";
+    teamInput.readOnly = true;
+    teamInput.style.backgroundColor = "#222"; // 設置較暗的背景以表示唯讀
+    teamInput.style.color = "#aaa";
     content.appendChild(teamGroup);
     
-    // 原班別選擇 (動態)
-    const originalShiftGroup = createSelectInputGroup("originalShift", "原班別", [
-      { value: "", label: "請先選擇團隊類別" }
-    ]);
+    // 3. 原班別選擇 (使用新版選單)
+    const originalShiftGroup = createNewShiftSelect("originalShift", "原班別/假別");
     content.appendChild(originalShiftGroup);
     
-    // 新班別選擇 (動態)
-    const newShiftGroup = createSelectInputGroup("newShift", "新班別", [
-      { value: "", label: "請先選擇團隊類別" }
-    ]);
+    // 4. 新班別選擇 (使用新版選單)
+    const newShiftGroup = createNewShiftSelect("newShift", "新班別/假別");
     content.appendChild(newShiftGroup);
     
-    // 添加重複班別檢查提示
-    const shiftWarning = document.createElement("div");
-    shiftWarning.id = "shiftWarning";
-    shiftWarning.style.display = "none";
-    shiftWarning.style.color = "#ff4444";
-    shiftWarning.style.fontSize = "14px";
-    shiftWarning.style.marginTop = "5px";
-    shiftWarning.style.marginBottom = "10px";
-    shiftWarning.style.padding = "10px";
-    shiftWarning.style.borderRadius = "5px";
-    shiftWarning.style.backgroundColor = "rgba(255, 68, 68, 0.1)";
-    shiftWarning.style.textAlign = "center";
-    shiftWarning.innerHTML = "<strong>系統提示：</strong>原班別與新班別相同，請選擇不同的班別";
-    content.appendChild(shiftWarning);
-    
-    // 異動原因
+    // 5. 異動原因
     const reasonGroup = createTextAreaInputGroup("shiftReason", "原因");
     content.appendChild(reasonGroup);
     
-    // 移除: 不再添加檔案上傳提示
-    // const fileNote = createFileUploadNote();
-    // content.appendChild(fileNote);
-    
-    // 錯誤容器
+    // 6. 錯誤容器
     const errorContainer = document.createElement("div");
     errorContainer.id = "form-error-container";
     errorContainer.className = "form-error-container";
     errorContainer.style.display = "none";
     content.appendChild(errorContainer);
-    
-    // 設置團隊選擇事件
-    const teamSelect = content.querySelector('#teamType');
-    const originalSelect = content.querySelector('#originalShift');
-    const newSelect = content.querySelector('#newShift');
-    
-    if (teamSelect && originalSelect && newSelect) {
-      // 班別映射表
-      const shiftOptions = {
-        'SV': [
-          { value: "", label: "請選擇班別" },
-          { value: "A1", label: "A1" },
-          { value: "A2", label: "A2" },
-          { value: "A3", label: "A3" },
-          { value: "B1", label: "B1" },
-          { value: "B2", label: "B2" },
-          { value: "B3", label: "B3" },
-          { value: "X1", label: "X1" },
-          { value: "X2", label: "X2" },
-          { value: "X3", label: "X3" }
-        ],
-        'KT': [
-          { value: "", label: "請選擇班別" },
-          { value: "KA", label: "KA" },
-          { value: "KB", label: "KB" }
-        ]
-      };
-      
-      // 團隊選擇事件處理
-      teamSelect.addEventListener('change', function() {
-        const selectedTeam = this.value;
-        
-        // 清空原有選項
-        while (originalSelect.options.length > 0) {
-          originalSelect.remove(0);
-        }
-        while (newSelect.options.length > 0) {
-          newSelect.remove(0);
-        }
-        
-        // 隱藏警告
-        shiftWarning.style.display = "none";
-        
-        // 如果選擇了團隊，填充班別選項
-        if (selectedTeam && shiftOptions[selectedTeam]) {
-          const options = shiftOptions[selectedTeam];
-          options.forEach(opt => {
-            const originalOption = new Option(opt.label, opt.value);
-            const newOption = new Option(opt.label, opt.value);
-            originalSelect.add(originalOption);
-            newSelect.add(newOption);
-          });
-          
-          // 清除錯誤標記
-          clearFieldError('originalShift');
-          clearFieldError('newShift');
-        } else {
-          // 未選擇團隊，顯示提示選項
-          originalSelect.add(new Option("請先選擇團隊類別", ""));
-          newSelect.add(new Option("請先選擇團隊類別", ""));
-        }
-      });
-      
-      // 班別選擇變更事件 - 檢查重複
-      function checkDuplicateShift() {
-        const originalValue = originalSelect.value;
-        const newValue = newSelect.value;
-        
-        // 如果兩者都有值且相同，顯示警告
-        if (originalValue && newValue && originalValue === newValue) {
-          shiftWarning.style.display = "block";
-          // 為新班別添加錯誤標示
-          showFieldError('newShift');
-        } else {
-          shiftWarning.style.display = "none";
-          // 清除錯誤標示
-          clearFieldError('newShift');
-        }
-      }
-      
-      // 添加變更事件監聽
-      originalSelect.addEventListener('change', checkDuplicateShift);
-      newSelect.addEventListener('change', checkDuplicateShift);
-    }
     
     return content;
   }
