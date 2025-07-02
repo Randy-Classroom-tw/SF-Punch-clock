@@ -3129,85 +3129,79 @@
                 submitButton.textContent = "等待檔案上傳"; 
                 submitButton.disabled = true; 
               }
-            } else {
-              // 對於其他表單類型，或請假表單但後端指示無需檔案，直接顯示成功訊息
-              console.log(`表單類型 ${details?.formType || title} 無需上傳檔案或缺少上傳資訊。`);
-              const modal = document.getElementById('dynamicFormModal');
-              if (modal) document.body.removeChild(modal);
-              UIUtils.displaySuccess(message);
-            }
-          } else { // 處理 submitCallback 回調中的 success 為 false 的情況
-            const stage = details ? details.stage : 'unknown';
-            
-            // 修改：增加表單類型判斷
-            const currentFormType = details?.formType || title; // 使用 details.formType 或 title 來判斷當前表單類型
-            
-            if (stage === 'popup' && details.requestId && details.uploadUrl) {
-              // API 成功，但 window.open 失敗
-              console.warn("API 成功，但 window.open 失敗。");
+            } else { // 處理 submitCallback 回調中的 success 為 false 的情況
+              const stage = details ? details.stage : 'unknown';
               
-              // 只有請假申請表單才顯示"重試開啟上傳頁面"的提示
-              if (currentFormType === "請假申請" || currentFormType === "leave") {
-                console.warn(`API 成功，但 window.open 失敗 (表單類型: ${currentFormType})。提示使用者重試開啟上傳頁面。`);
+              // 修改：增加表單類型判斷
+              const currentFormType = details?.formType || title; // 使用 details.formType 或 title 來判斷當前表單類型
+              
+              if (stage === 'popup' && details.requestId && details.uploadUrl) {
+                // API 成功，但 window.open 失敗
+                console.warn("API 成功，但 window.open 失敗。");
                 
-                const popupFailedMessageHTML = `
-                  <div style="padding:10px 15px; background-color:rgba(255, 193, 7, 0.1); border-left: 3px solid #ffc107; border-radius: 4px; margin-bottom: 15px; text-align:left; color:#ffc107;">
-                    <strong style="display:block; margin-bottom:5px;">⌾上傳檔案異常</strong>
-                    請關閉瀏覽器的阻擋彈出式視窗，<br>
-                    或直接點擊下方按鈕執行上傳。<br>
-                  </div>
-                  <button type="button" id="retryPopupOpenBtn_${Date.now()}" class="btn" style="background:linear-gradient(to right, #ff9800, #e65100); color:white; margin:0 auto; display:block; padding:10px 20px; border-radius:5px; font-size:16px;">
-                    <span class="material-icons" style="font-size:inherit; vertical-align:middle; margin-right:5px;">open_in_new</span>
-                    重試開啟上傳頁面
-                  </button>
-                `;
-                if (errorContainer) {
-                  errorContainer.innerHTML = popupFailedMessageHTML;
-                  errorContainer.style.display = "block";
-                  formContentElement.scrollTo({ top: 0, behavior: "smooth" });
+                // 只有請假申請表單才顯示"重試開啟上傳頁面"的提示
+                if (currentFormType === "請假申請" || currentFormType === "leave") {
+                  console.warn(`API 成功，但 window.open 失敗 (表單類型: ${currentFormType})。提示使用者重試開啟上傳頁面。`);
                   
-                  // 為"重試開啟上傳頁面"按鈕添加只開窗的事件
-                  const retryPopupButton = errorContainer.querySelector("button[id^='retryPopupOpenBtn_']");
-                  if (retryPopupButton) {
-                    retryPopupButton.addEventListener("click", function() {
-                      console.log("執行重試開啟彈出視窗 for requestId:", details.requestId);
-                      // 只執行 openAndTrackUploadWindow
-                      const opened = openAndTrackUploadWindow(details.uploadUrl, details.requestId); 
-                      if (opened) {
-                        // 成功打開，關閉模態框，顯示提示（隱藏請求編號）
-                        const modal = document.getElementById('dynamicFormModal');
-                        if (modal) document.body.removeChild(modal);
-                        UIUtils.displaySuccess(`申請已提交｜上傳頁面已開啟`);
-                      } else {
-                        // 仍然失敗，更新錯誤訊息（隱藏請求編號）
-                        errorContainer.querySelector("div").innerHTML = `<strong style="display:block; margin-bottom:5px;">仍然無法開啟上傳頁面</strong>請再次檢查彈出視窗設定｜或稍後重新嘗試`;
-                        // 主按鈕仍然是禁用的
-                      }
-                    });
+                  const popupFailedMessageHTML = `
+                    <div style="padding:10px 15px; background-color:rgba(255, 193, 7, 0.1); border-left: 3px solid #ffc107; border-radius: 4px; margin-bottom: 15px; text-align:left; color:#ffc107;">
+                      <strong style="display:block; margin-bottom:5px;">⌾上傳檔案異常</strong>
+                      請關閉瀏覽器的阻擋彈出式視窗，<br>
+                      或直接點擊下方按鈕執行上傳。<br>
+                    </div>
+                    <button type="button" id="retryPopupOpenBtn_${Date.now()}" class="btn" style="background:linear-gradient(to right, #ff9800, #e65100); color:white; margin:0 auto; display:block; padding:10px 20px; border-radius:5px; font-size:16px;">
+                      <span class="material-icons" style="font-size:inherit; vertical-align:middle; margin-right:5px;">open_in_new</span>
+                      重試開啟上傳頁面
+                    </button>
+                  `;
+                  if (errorContainer) {
+                    errorContainer.innerHTML = popupFailedMessageHTML;
+                    errorContainer.style.display = "block";
+                    formContentElement.scrollTo({ top: 0, behavior: "smooth" });
+                    
+                    // 為"重試開啟上傳頁面"按鈕添加只開窗的事件
+                    const retryPopupButton = errorContainer.querySelector("button[id^='retryPopupOpenBtn_']");
+                    if (retryPopupButton) {
+                      retryPopupButton.addEventListener("click", function() {
+                        console.log("執行重試開啟彈出視窗 for requestId:", details.requestId);
+                        // 只執行 openAndTrackUploadWindow
+                        const opened = openAndTrackUploadWindow(details.uploadUrl, details.requestId); 
+                        if (opened) {
+                          // 成功打開，關閉模態框，顯示提示（隱藏請求編號）
+                          const modal = document.getElementById('dynamicFormModal');
+                          if (modal) document.body.removeChild(modal);
+                          UIUtils.displaySuccess(`申請已提交｜上傳頁面已開啟`);
+                        } else {
+                          // 仍然失敗，更新錯誤訊息（隱藏請求編號）
+                          errorContainer.querySelector("div").innerHTML = `<strong style="display:block; margin-bottom:5px;">仍然無法開啟上傳頁面</strong>請再次檢查彈出視窗設定｜或稍後重新嘗試`;
+                          // 主按鈕仍然是禁用的
+                        }
+                      });
+                    }
                   }
+                  // 主按鈕保持禁用狀態
+                  submitButton.textContent = "等待檔案上傳"; 
+                  submitButton.disabled = true;
+                } else {
+                  // 其他非請假表單遇到 'popup' 錯誤 (非預期情況)
+                  console.warn(`API 成功但 window.open 失敗，但表單類型 ${currentFormType} 無需檔案上傳。這是一個非預期情況。`);
+                  UIUtils.displayError(message || "表單提交成功，但處理後續步驟時發生錯誤。請聯繫管理員。");
+                  
+                  // 恢復提交按鈕的初始狀態
+                  submitButton.disabled = false;
+                  submitButton.textContent = "提交表單";
                 }
-                // 主按鈕保持禁用狀態
-                submitButton.textContent = "等待檔案上傳"; 
-                submitButton.disabled = true;
               } else {
-                // 其他非請假表單遇到 'popup' 錯誤 (非預期情況)
-                console.warn(`API 成功但 window.open 失敗，但表單類型 ${currentFormType} 無需檔案上傳。這是一個非預期情況。`);
-                UIUtils.displayError(message || "表單提交成功，但處理後續步驟時發生錯誤。請聯繫管理員。");
-                
-                // 恢復提交按鈕的初始狀態
+                // API 提交失敗 或 其他未知錯誤
+                UIUtils.displayError(message || "提交失敗｜請稍後再試");
+                // 根據表單類型恢復按鈕的正確文字
+                if (title === "請假申請") {
+                  submitButton.textContent = "下一步：上傳佐證";
+                } else {
+                  submitButton.textContent = "提交表單";
+                }
                 submitButton.disabled = false;
-                submitButton.textContent = "提交表單";
               }
-            } else {
-              // API 提交失敗 或 其他未知錯誤
-              UIUtils.displayError(message || "提交失敗｜請稍後再試");
-              // 根據表單類型恢復按鈕的正確文字
-              if (title === "請假申請") {
-                submitButton.textContent = "下一步：上傳佐證";
-              } else {
-                submitButton.textContent = "提交表單";
-              }
-              submitButton.disabled = false;
             }
           }
         }); // submitCallback 回調結束
@@ -4559,148 +4553,88 @@
    * @returns {HTMLElement} 表單內容元素
    */
   function createShiftChangeFormContent() {
-    const content = document.createElement("div");
-    content.className = "form-content";
-    
-    // 異動日期選擇
-    const dateGroup = createDateInputGroup("shiftDate", "日期");
-    content.appendChild(dateGroup);
-    
-    // 團隊選擇 (新增)
-    const teamGroup = createSelectInputGroup("teamType", "團隊", [
-      { value: "", label: "請選擇團隊" },
-      { value: "SV", label: "SV-外場" },
-      { value: "KT", label: "KT-內廚" }
-    ]);
-    content.appendChild(teamGroup);
-    
-    // 原班別選擇 (動態)
-    const originalShiftGroup = createSelectInputGroup("originalShift", "原班別", [
-      { value: "", label: "請先選擇團隊類別" }
-    ]);
-    content.appendChild(originalShiftGroup);
-    
-    // 新班別選擇 (動態)
-    const newShiftGroup = createSelectInputGroup("newShift", "新班別", [
-      { value: "", label: "請先選擇團隊類別" }
-    ]);
-    content.appendChild(newShiftGroup);
-    
-    // 添加重複班別檢查提示
-    const shiftWarning = document.createElement("div");
-    shiftWarning.id = "shiftWarning";
-    shiftWarning.style.display = "none";
-    shiftWarning.style.color = "#ff4444";
-    shiftWarning.style.fontSize = "14px";
-    shiftWarning.style.marginTop = "5px";
-    shiftWarning.style.marginBottom = "10px";
-    shiftWarning.style.padding = "10px";
-    shiftWarning.style.borderRadius = "5px";
-    shiftWarning.style.backgroundColor = "rgba(255, 68, 68, 0.1)";
-    shiftWarning.style.textAlign = "center";
-    shiftWarning.innerHTML = "<strong>系統提示：</strong>原班別與新班別相同，請選擇不同的班別";
-    content.appendChild(shiftWarning);
-    
-    // 異動原因
-    const reasonGroup = createTextAreaInputGroup("shiftReason", "原因");
-    content.appendChild(reasonGroup);
-    
-    // 移除: 不再添加檔案上傳提示
-    // const fileNote = createFileUploadNote();
-    // content.appendChild(fileNote);
-    
-    // 錯誤容器
-    const errorContainer = document.createElement("div");
-    errorContainer.id = "form-error-container";
-    errorContainer.className = "form-error-container";
-    errorContainer.style.display = "none";
-    content.appendChild(errorContainer);
-    
-    // 設置團隊選擇事件
-    const teamSelect = content.querySelector('#teamType');
-    const originalSelect = content.querySelector('#originalShift');
-    const newSelect = content.querySelector('#newShift');
-    
-    if (teamSelect && originalSelect && newSelect) {
-      // 班別映射表
-      const shiftOptions = {
-        'SV': [
-          { value: "", label: "請選擇班別" },
-          { value: "A1", label: "A1" },
-          { value: "A2", label: "A2" },
-          { value: "A3", label: "A3" },
-          { value: "B1", label: "B1" },
-          { value: "B2", label: "B2" },
-          { value: "B3", label: "B3" },
-          { value: "X1", label: "X1" },
-          { value: "X2", label: "X2" },
-          { value: "X3", label: "X3" }
-        ],
-        'KT': [
-          { value: "", label: "請選擇班別" },
-          { value: "KA", label: "KA" },
-          { value: "KB", label: "KB" }
-        ]
-      };
-      
-      // 團隊選擇事件處理
-      teamSelect.addEventListener('change', function() {
-        const selectedTeam = this.value;
-        
-        // 清空原有選項
-        while (originalSelect.options.length > 0) {
-          originalSelect.remove(0);
-        }
-        while (newSelect.options.length > 0) {
-          newSelect.remove(0);
-        }
-        
-        // 隱藏警告
-        shiftWarning.style.display = "none";
-        
-        // 如果選擇了團隊，填充班別選項
-        if (selectedTeam && shiftOptions[selectedTeam]) {
-          const options = shiftOptions[selectedTeam];
-          options.forEach(opt => {
-            const originalOption = new Option(opt.label, opt.value);
-            const newOption = new Option(opt.label, opt.value);
-            originalSelect.add(originalOption);
-            newSelect.add(newOption);
-          });
-          
-          // 清除錯誤標記
-          clearFieldError('originalShift');
-          clearFieldError('newShift');
-        } else {
-          // 未選擇團隊，顯示提示選項
-          originalSelect.add(new Option("請先選擇團隊類別", ""));
-          newSelect.add(new Option("請先選擇團隊類別", ""));
-        }
-      });
-      
-      // 班別選擇變更事件 - 檢查重複
-      function checkDuplicateShift() {
-        const originalValue = originalSelect.value;
-        const newValue = newSelect.value;
-        
-        // 如果兩者都有值且相同，顯示警告
-        if (originalValue && newValue && originalValue === newValue) {
-          shiftWarning.style.display = "block";
-          // 為新班別添加錯誤標示
-          showFieldError('newShift');
-        } else {
-          shiftWarning.style.display = "none";
-          // 清除錯誤標示
-          clearFieldError('newShift');
-        }
-      }
-      
-      // 添加變更事件監聽
-      originalSelect.addEventListener('change', checkDuplicateShift);
-      newSelect.addEventListener('change', checkDuplicateShift);
-    }
-    
-    return content;
+    const formContent = document.createElement('div');
+    formContent.className = 'form-content';
+    formContent.innerHTML = `
+        <div class="form-group">
+            <label for="shiftChangeDate">異動日期</label>
+            <input type="date" id="shiftChangeDate" class="form-input datepicker">
+        </div>
+        <div class="form-group">
+            <label for="shiftChangeTeam">團隊</label>
+            <input type="text" id="shiftChangeTeam" class="form-input" value="BA-吧檯" disabled style="background-color: #2a2a2a; color: #aaa; cursor: not-allowed;">
+        </div>
+        <div class="form-group">
+            <label for="originalShift">原班別</label>
+            <select id="originalShift" name="originalShift" class="form-input">
+              <option value="" disabled selected>請選擇原班別</option>
+              <optgroup label=":: 早班 ::">
+                <option value="A1">A1 (11:30 ~ 20:30)</option>
+              </optgroup>
+              <optgroup label=":: 中班 ::">
+                <option value="B1">B1 (14:00 ~ 23:00)</option>
+              </optgroup>
+              <optgroup label=":: 晚班 ::">
+                <option value="C1">C1 (18:15 ~ 03:15)</option>
+                <option value="C2">C2 (18:30 ~ 03:30)</option>
+                <option value="C3">C3 (19:15 ~ 04:15)</option>
+              </optgroup>
+              <optgroup label=":: 兼職-晚班 ::">
+                <option value="C5">C5 (20:00 ~ 03:00)</option>
+                <option value="C6">C6 (20:15 ~ 04:15)</option>
+              </optgroup>
+              <optgroup label=":: 特殊 ::">
+                <option value="X1">X1 (19:30 ~ 03:30)</option>
+                <option value="X2">X2 (20:15 ~ 04:15)</option>
+              </optgroup>
+              <optgroup label=":: 假別 ::">
+                <option value="例假">例假</option>
+                <option value="休息">休息</option>
+                <option value="特休">特休</option>
+                <option value="國假">國假</option>
+                <option value="其他">其他</option>
+              </optgroup>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="newShift">新班別</label>
+            <select id="newShift" name="newShift" class="form-input">
+              <option value="" disabled selected>請選擇新班別</option>
+              <optgroup label=":: 早班 ::">
+                <option value="A1">A1 (11:30 ~ 20:30)</option>
+              </optgroup>
+              <optgroup label=":: 中班 ::">
+                <option value="B1">B1 (14:00 ~ 23:00)</option>
+              </optgroup>
+              <optgroup label=":: 晚班 ::">
+                <option value="C1">C1 (18:15 ~ 03:15)</option>
+                <option value="C2">C2 (18:30 ~ 03:30)</option>
+                <option value="C3">C3 (19:15 ~ 04:15)</option>
+              </optgroup>
+              <optgroup label=":: 兼職-晚班 ::">
+                <option value="C5">C5 (20:00 ~ 03:00)</option>
+                <option value="C6">C6 (20:15 ~ 04:15)</option>
+              </optgroup>
+              <optgroup label=":: 特殊 ::">
+                <option value="X1">X1 (19:30 ~ 03:30)</option>
+                <option value="X2">X2 (20:15 ~ 04:15)</option>
+              </optgroup>
+              <optgroup label=":: 假別 ::">
+                <option value="例假">例假</option>
+                <option value="休息">休息</option>
+                <option value="特休">特休</option>
+                <option value="國假">國假</option>
+                <option value="其他">其他</option>
+              </optgroup>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="shiftChangeReason">異動原因</label>
+            <textarea id="shiftChangeReason" class="form-textarea" rows="4" placeholder="請簡述異動原因"></textarea>
+        </div>
+        <div class="form-error-container" style="display:none;"></div>
+    `;
+    return formContent;
   }
 
   /**
